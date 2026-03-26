@@ -1,0 +1,432 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lab Schedule</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    * { font-family: 'Syne', sans-serif; }
+    code, .mono { font-family: 'DM Mono', monospace; }
+
+    body {
+  background: #f1f5f9;
+  min-height: 100vh;
+  margin: 0;           /* extra space remove કરવા */
+  width: 100vw;        /* full width */
+  overflow-x: hidden;  /* horizontal scroll prevent */
+}
+    
+    /* Glow orbs */
+    .orb1 {
+      position: fixed; top: -100px; left: -100px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+    .orb2 {
+      position: fixed; bottom: -80px; right: -80px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* Card glow */
+    .card-glow {
+      box-shadow:
+        0 0 0 1px rgba(99,102,241,0.15),
+        0 4px 32px rgba(99,102,241,0.08),
+        0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    /* Fade in animation */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.6s ease both; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.25s; }
+    .delay-3 { animation-delay: 0.4s; }
+
+    /* Table row hover */
+    .data-row {
+      transition: background 0.2s ease, transform 0.15s ease;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .data-row:hover {
+      background: rgba(99,102,241,0.08);
+      transform: translateX(2px);
+    }
+    .data-row:last-child { border-bottom: none; }
+
+    /* Status badge pulse */
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .pulse-dot {
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    /* Shimmer on load bar */
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    .shimmer-bar {
+      background: linear-gradient(90deg, rgba(99,102,241,0.3) 25%, rgba(99,102,241,0.6) 50%, rgba(99,102,241,0.3) 75%);
+      background-size: 200% auto;
+      animation: shimmer 2s linear infinite;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 3px; }
+  </style>
+</head>
+<body class="relative">
+
+  <div class="relative z-10 w-full h-full px-6 py-12">
+
+    <!-- ── TOP CARD ── -->
+    <div class="card-glow fade-up bg-white rounded-2xl p-8 mb-10 overflow-hidden relative">
+
+      <!-- Accent line top -->
+      <div class="shimmer-bar absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl"></div>
+
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+
+        <!-- Left: Icon + Title -->
+        <div class="flex items-center gap-5">
+          <div class="flex-shrink-0 w-16 h-16 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+            <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.659 1.591L19 14.5m-9.25 0l.75 3M5 14.5l-.75 3m9-3l.75 3m-9.75 0h9.75" />
+            </svg>
+          </div>
+          <div>
+            <p class="mono text-xs text-indigo-400 tracking-widest uppercase mb-1">Academic System</p>
+            <h1 class="text-2xl font-800 font-extrabold text-slate-800 leading-tight">Lab Schedule</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Real-time timetable from database</p>
+          </div>
+        </div>
+
+        <!-- Right: Stats -->
+        <div class="flex items-center gap-6 sm:gap-8">
+          <div class="text-center">
+            <p class="text-3xl font-bold text-slate-800" id="total-labs">—</p>
+            <p class="text-xs text-slate-400 mt-0.5 uppercase tracking-wider">Total Labs</p>
+          </div>
+          <div class="w-px h-10 bg-slate-200"></div>
+          <div class="text-center">
+            <div class="flex items-center gap-1.5 justify-center">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+              <p class="text-3xl font-bold text-slate-800" id="active-now">—</p>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5 uppercase tracking-wider">Active Now</p>
+          </div>
+          <div class="w-px h-10 bg-slate-200"></div>
+          <div class="text-center">
+            <p class="text-xs mono text-indigo-500 font-medium" id="current-time">—</p>
+            <p class="text-xs text-slate-400 mt-0.5 uppercase tracking-wider">Current Time</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search + Filter bar -->
+      <div class="mt-6 flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input
+            id="search-input"
+            type="text"
+            placeholder="Search lab, course..."
+            class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:bg-indigo-50/50 transition"
+          />
+        </div>
+        <select id="filter-course" class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-600 focus:outline-none focus:border-indigo-400 transition appearance-none cursor-pointer">
+          <option value="">All Courses</option>
+        </select>
+        <select id="filter-lab" class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-600 focus:outline-none focus:border-indigo-400 transition appearance-none cursor-pointer">
+          <option value="">All Labs</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ── TABLE SECTION ── -->
+    <div class="card-glow fade-up delay-2 bg-white rounded-2xl overflow-hidden">
+
+      <!-- Table header bar -->
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-1.5 h-5 bg-indigo-500 rounded-full"></div>
+          <h2 class="text-sm font-semibold text-white">Schedule Entries</h2>
+          <span id="row-count" class="ml-2 mono text-xs bg-indigo-500/15 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/20">0 rows</span>
+        </div>
+        <button onclick="refreshData()" class="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition px-3 py-1.5 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+
+      <!-- Column Headers -->
+      <div class="grid grid-cols-12 gap-0 px-6 py-3 bg-white/[0.02] border-b border-white/5">
+        <div class="col-span-1 mono text-[10px] uppercase tracking-widest text-slate-600">#</div>
+        <div class="col-span-3 mono text-[10px] uppercase tracking-widest text-slate-500 flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5"/></svg>
+          Lab
+        </div>
+        <div class="col-span-2 mono text-[10px] uppercase tracking-widest text-slate-500 flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Start Time
+        </div>
+        <div class="col-span-2 mono text-[10px] uppercase tracking-widest text-slate-500 flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          End Time
+        </div>
+        <div class="col-span-3 mono text-[10px] uppercase tracking-widest text-slate-500 flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+          Course
+        </div>
+        <div class="col-span-1 mono text-[10px] uppercase tracking-widest text-slate-500 text-right">Status</div>
+      </div>
+
+      <!-- Table Body -->
+      <div id="table-body" class="divide-y divide-white/0">
+        <!-- Skeleton rows -->
+        <div class="px-6 py-4 flex gap-4">
+          <div class="h-4 w-4 bg-white/5 rounded animate-pulse"></div>
+          <div class="h-4 flex-1 bg-white/5 rounded animate-pulse"></div>
+          <div class="h-4 w-24 bg-white/5 rounded animate-pulse"></div>
+          <div class="h-4 w-24 bg-white/5 rounded animate-pulse"></div>
+          <div class="h-4 w-32 bg-white/5 rounded animate-pulse"></div>
+        </div>
+        <div class="px-6 py-4 flex gap-4 opacity-70">
+          <div class="h-4 w-4 bg-white/5 rounded animate-pulse"></div>
+          <div class="h-4 flex-1 bg-white/5 rounded animate-pulse"></div>
+          <div class="h-4 w-24 bg-white/5 rounded animate-pulse"></div>
+          <div class="h-4 w-24 bg-white/5 rounded animate-pulse"></div>
+          <div class="h-4 w-32 bg-white/5 rounded animate-pulse"></div>
+        </div>
+        <div class="px-6 py-4 flex gap-4 opacity-40">
+          <div class="h-4 w-4 bg-white/5 rounded animate-pulse"></div>
+          <div class="h-4 flex-1 bg-white/5 rounded animate-pulse"></div>
+          <div class="h-4 w-24 bg-white/5 rounded animate-pulse"></div>
+          <div class="h-4 w-24 bg-white/5 rounded animate-pulse"></div>
+          <div class="h-4 w-32 bg-white/5 rounded animate-pulse"></div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-3 border-t border-white/5 flex items-center justify-between">
+        <p class="mono text-[11px] text-slate-600" id="last-updated">Fetching data...</p>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span class="mono text-[10px] text-slate-600">Active</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span class="mono text-[10px] text-slate-600">Upcoming</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-slate-600"></span>
+            <span class="mono text-[10px] text-slate-600">Ended</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Credit -->
+    <p class="text-center mono text-[11px] text-slate-700 mt-8">
+      Connected to SQLite · Auto-refresh every 30s
+    </p>
+  </div>
+
+  <script>
+    // ─────────────────────────────────────────────
+    // MOCK DATABASE  (replace with real fetch/SQL)
+    // ─────────────────────────────────────────────
+    const mockDatabase = [
+      { id: 1, lab: "CS Lab 101",     start_time: "08:00", end_time: "10:00", course: "Data Structures" },
+      { id: 2, lab: "CS Lab 102",     start_time: "09:30", end_time: "11:30", course: "Operating Systems" },
+      { id: 3, lab: "Network Lab",    start_time: "10:00", end_time: "12:00", course: "Computer Networks" },
+      { id: 4, lab: "Physics Lab",    start_time: "11:00", end_time: "13:00", course: "Applied Physics" },
+      { id: 5, lab: "CS Lab 103",     start_time: "12:30", end_time: "14:30", course: "Database Systems" },
+      { id: 6, lab: "Electronics Lab",start_time: "13:00", end_time: "15:00", course: "Digital Electronics" },
+      { id: 7, lab: "AI Lab",         start_time: "14:00", end_time: "16:00", course: "Machine Learning" },
+      { id: 8, lab: "CS Lab 101",     start_time: "15:30", end_time: "17:30", course: "Web Development" },
+      { id: 9, lab: "Math Lab",       start_time: "09:00", end_time: "11:00", course: "Linear Algebra" },
+      { id: 10, lab: "Chem Lab",      start_time: "16:00", end_time: "18:00", course: "Chemistry Practical" },
+    ];
+
+    // ─────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────
+    function getStatus(start, end) {
+      const now  = new Date();
+      const [sh,sm] = start.split(':').map(Number);
+      const [eh,em] = end.split(':').map(Number);
+      const s = new Date(); s.setHours(sh,sm,0);
+      const e = new Date(); e.setHours(eh,em,0);
+      if (now >= s && now <= e) return 'active';
+      if (now < s)             return 'upcoming';
+      return 'ended';
+    }
+
+    const statusConfig = {
+      active:   { dot: 'bg-emerald-400 pulse-dot', text: 'Active',   badge: 'text-emerald-400 bg-emerald-400/10 border-emerald-500/20' },
+      upcoming: { dot: 'bg-amber-400',              text: 'Upcoming', badge: 'text-amber-400 bg-amber-400/10 border-amber-500/20' },
+      ended:    { dot: 'bg-slate-600',              text: 'Ended',    badge: 'text-slate-500 bg-slate-500/10 border-slate-600/20' },
+    };
+
+    const labColors = [
+      'text-indigo-400 bg-indigo-400/10 border-indigo-500/20',
+      'text-cyan-400 bg-cyan-400/10 border-cyan-500/20',
+      'text-violet-400 bg-violet-400/10 border-violet-500/20',
+      'text-pink-400 bg-pink-400/10 border-pink-500/20',
+      'text-sky-400 bg-sky-400/10 border-sky-500/20',
+    ];
+
+    function labColor(name) {
+      let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xff;
+      return labColors[h % labColors.length];
+    }
+
+    // ─────────────────────────────────────────────
+    // Render
+    // ─────────────────────────────────────────────
+    let allData = [];
+    let filtered = [];
+
+    function renderTable(data) {
+      const body = document.getElementById('table-body');
+      if (!data.length) {
+        body.innerHTML = `
+          <div class="py-16 text-center">
+            <svg class="w-10 h-10 text-slate-700 mx-auto mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375"/>
+            </svg>
+            <p class="text-slate-600 text-sm">No records found</p>
+          </div>`;
+        document.getElementById('row-count').textContent = '0 rows';
+        return;
+      }
+
+      document.getElementById('row-count').textContent = `${data.length} row${data.length !== 1 ? 's' : ''}`;
+
+      body.innerHTML = data.map((row, i) => {
+        const status = getStatus(row.start_time, row.end_time);
+        const sc = statusConfig[status];
+        const lc = labColor(row.lab);
+        return `
+        <div class="data-row grid grid-cols-12 gap-0 px-6 py-4 items-center cursor-default">
+          <div class="col-span-1 mono text-xs text-slate-700">${String(i+1).padStart(2,'0')}</div>
+          <div class="col-span-3">
+            <span class="mono text-xs font-medium px-2.5 py-1 rounded-md border ${lc}">${row.lab}</span>
+          </div>
+          <div class="col-span-2">
+            <div class="flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-slate-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span class="mono text-sm text-slate-300 font-medium">${row.start_time}</span>
+            </div>
+          </div>
+          <div class="col-span-2">
+            <div class="flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-slate-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span class="mono text-sm text-slate-400">${row.end_time}</span>
+            </div>
+          </div>
+          <div class="col-span-3">
+            <p class="text-sm text-slate-300 truncate">${row.course}</p>
+          </div>
+          <div class="col-span-1 flex justify-end">
+            <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] mono font-medium ${sc.badge}">
+              <span class="w-1.5 h-1.5 rounded-full ${sc.dot}"></span>
+              ${sc.text}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function updateStats(data) {
+      document.getElementById('total-labs').textContent = data.length;
+      const active = data.filter(r => getStatus(r.start_time, r.end_time) === 'active').length;
+      document.getElementById('active-now').textContent = active;
+    }
+
+    function updateFilters(data) {
+      const courses = [...new Set(data.map(r => r.course))].sort();
+      const labs = [...new Set(data.map(r => r.lab))].sort();
+      const fc = document.getElementById('filter-course');
+      const fl = document.getElementById('filter-lab');
+      fc.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option>${c}</option>`).join('');
+      fl.innerHTML = '<option value="">All Labs</option>' + labs.map(l => `<option>${l}</option>`).join('');
+    }
+
+    function applyFilters() {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      const course = document.getElementById('filter-course').value;
+      const lab = document.getElementById('filter-lab').value;
+      filtered = allData.filter(r =>
+        (!q || r.lab.toLowerCase().includes(q) || r.course.toLowerCase().includes(q)) &&
+        (!course || r.course === course) &&
+        (!lab || r.lab === lab)
+      );
+      renderTable(filtered);
+    }
+
+    // ─────────────────────────────────────────────
+    // Clock
+    // ─────────────────────────────────────────────
+    function updateClock() {
+      const now = new Date();
+      const t = now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: true });
+      document.getElementById('current-time').textContent = t;
+    }
+
+    // ─────────────────────────────────────────────
+    // Data load (simulated DB fetch)
+    // ─────────────────────────────────────────────
+    function refreshData() {
+      document.getElementById('last-updated').textContent = 'Refreshing...';
+      setTimeout(() => {
+        allData = mockDatabase;
+        updateStats(allData);
+        updateFilters(allData);
+        applyFilters();
+        const now = new Date();
+        document.getElementById('last-updated').textContent =
+          `Last updated · ${now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12: true })}`;
+      }, 600);
+    }
+
+    // ─────────────────────────────────────────────
+    // Init
+    // ─────────────────────────────────────────────
+    document.getElementById('search-input').addEventListener('input', applyFilters);
+    document.getElementById('filter-course').addEventListener('change', applyFilters);
+    document.getElementById('filter-lab').addEventListener('change', applyFilters);
+
+    updateClock();
+    setInterval(updateClock, 1000);
+    setInterval(refreshData, 30000);
+    refreshData();
+
+    // Re-render table every minute so statuses update live
+    setInterval(() => { renderTable(filtered); updateStats(allData); }, 60000);
+  </script>
+</body>
+</html
